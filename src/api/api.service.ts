@@ -1,29 +1,60 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
 import { JustifyTextService } from 'src/justify-text/justify-text.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 
+
 @Injectable()
 export class ApiService {
+  private readonly MAX_DAILY_WORDS: number = Number(
+    process.env.MAX_DAILY_WORDS,
+  );
+
   constructor(
     private justifyTextService: JustifyTextService,
     private prisma: PrismaService,
     private readonly jwtService: JwtService,
   ) {}
 
-  justifyText(text: string): string {
-    return this.justifyTextService.fullJustify(text.split(' '), 80).join(' ');
+  async justifyText(text: string, token: string): Promise<string> {
+    const words: string[] = text.split(' ');
+    const userEmail: string = await this.getUserEmailFromToken(token);
+
+    const user: User = await this.getUserByEmail(userEmail);
+
+    if (user.justifiedWords + words.length < this.MAX_DAILY_WORDS) {
+      await this.updateJustifiedWords(user, words.length);
+      return this.justifyTextService.fullJustify(words, 80).join(' ');
+    }
+
+    // if user has exceded the daily allowed limit
+    throw new HttpException(
+      'Surpassed Daily limit. Payment required.',
+      HttpStatus.PAYMENT_REQUIRED,
+    );
   }
 
   async registreUser(email: string): Promise<string> {
-    // get the user if already registred
     let user: User;
-    if (await this.isRegistred(email)) {
-      user = await this.getUserByEmail(email);
-      return  user.token;
+
+    if (!email) {
+      throw new BadRequestException('Email is required');
     }
 
+    // get the user if already registred
+    if (await this.isRegistred(email)) {
+      user = await this.getUserByEmail(email);
+      return user.token;
+    }
+
+    // registre if a new user
     try {
       user = await this.prisma.user.create({
         data: {
@@ -32,26 +63,50 @@ export class ApiService {
         },
       });
     } catch (error) {
-      console.log(error);
+      throw new BadRequestException('Failed to register user');
     }
 
     return user.token;
   }
 
-  async isRegistred(email: string): Promise<boolean> {
-    const user = await this.getUserByEmail(email);
-
-    return user !== null || typeof user !== 'undefined';
+  private async getUserEmailFromToken(token: string): Promise<string> {
+    try {
+      const decoded = await this.jwtService.verifyAsync(token);
+      return decoded.email;
+    } catch (error) {
+      throw new UnauthorizedException(
+        'You need to register using an email at /api/token before justifying any text or include your token in the authorization header if already registered.',
+      );
+    }
   }
 
-  async getUserByEmail(email: string): Promise<User>  {
+  private async updateJustifiedWords(
+    user: User,
+    wordCount: number,
+  ): Promise<void> {
+    try {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { justifiedWords: user.justifiedWords + wordCount },
+      });
+    } catch (error) {
+      throw new BadRequestException('Failed update justified words count.');
+    }
+  }
+
+  private async isRegistred(email: string): Promise<boolean> {
+    const user = await this.getUserByEmail(email);
+    return user !== null && typeof user !== 'undefined';
+  }
+
+  private async getUserByEmail(email: string): Promise<User> {
     try {
       const user = await this.prisma.user.findUnique({
-        where: { email: email },
+        where: { email },
       });
       return user;
     } catch (error) {
-      console.log(error);
+      throw new BadRequestException('Failed to get user.');
     }
   }
 }
