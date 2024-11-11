@@ -94,7 +94,7 @@ The application will start on http://localhost:3000.
 
 - Unauthorized (401): If the Authorization token is missing or invalid.
 - Payment Required (402): If the user has surpassed the daily word limit of 80,000 words.
-- Bad Request (400): If the request body is missing or malformed.
+- Bad Request (400): If the request body is missing, malformed, or of an incorrect type.
 
 ## Rate Limiting
 
