@@ -40,6 +40,21 @@ describe('ApiController', () => {
   });
 
   describe('tokenEndPoint', () => {
+    it('should throw invalid body type exception', () => {
+      // The user must exist in the database before running this test
+      const result = new HttpException(
+        `Invalid body type. Expected ${jsonContentType}`,
+        HttpStatus.BAD_REQUEST,
+      );
+      const headers = {
+        contentType: textContentType,
+      };
+      const email = 'mohamed@gmail.com';
+      const test = apiController.registreUser(email, headers.contentType);
+
+      expect(test).rejects.toThrow(result);
+    });
+
     it('should return "Email is required"', async () => {
       const result = 'Email is required';
       jest
@@ -154,7 +169,7 @@ describe('ApiController', () => {
       ];
     });
 
-    it.only('should throw invalid body type exception', async () => {
+    it('should throw invalid body type exception', () => {
       // The user must exist in the database before running this test
       const result = new HttpException(
         `Invalid body type. Expected ${textContentType}`,
@@ -165,12 +180,12 @@ describe('ApiController', () => {
         contentType: jsonContentType,
       };
       const body = { text: rawText };
-      const test = await apiController.justifyText(
+      const test = apiController.justifyText(
         body.text,
         headers.authorization,
         headers.contentType,
       );
-      expect(test.split('\n')).rejects.toThrow(result);
+      expect(test).rejects.toThrow(result);
     });
 
     it('should throw an "UnauthorizedException" when a token isn\'t included in the request', () => {
@@ -214,6 +229,7 @@ describe('ApiController', () => {
       expect(test2.split('\n')).toStrictEqual(justifiedText2);
     });
 
+
     it('should return an "HttpException". Payment required.', () => {
       // Pre-test setup
       // The user must exist in the database before running this test
@@ -239,5 +255,6 @@ describe('ApiController', () => {
 
       expect(test).rejects.toThrow(expectedException);
     });
+  
   });
 });
