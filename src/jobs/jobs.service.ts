@@ -17,9 +17,11 @@ export class JobsService {
           justifiedWords: 0,
         },
       });
+      console.log('Reseting users daily rate limit ...');
     } catch (error) {
-      throw new InternalServerErrorException('Failed to reset daily words limit');
+      throw new InternalServerErrorException(
+        'Failed to reset daily words limit',
+      );
     }
-    console.log('Reseting users daily rate limit ...');
   }
 }

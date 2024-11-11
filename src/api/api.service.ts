@@ -24,7 +24,14 @@ export class ApiService {
     private prisma: PrismaService,
     private jwtService: JwtService,
   ) {}
-
+  validateContentType(contentType: string, expectedContentType: string): void {
+    if (!contentType || !contentType.includes(expectedContentType)) {
+      throw new HttpException(
+        `Invalid body type. Expected ${expectedContentType}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
   async justifyText(text: string, token: string): Promise<string> {
     const words: string[] = text.split(' ');
 
@@ -34,8 +41,10 @@ export class ApiService {
     const user: User = await this.getUserByEmail(userEmail);
 
     if (user.justifiedWords + words.length < this.MAX_DAILY_WORDS) {
-      await this.updateJustifiedWords(user, words.length);       
-      return this.justifyTextService.fullJustify(words, this.TEXT_LINE_LENGTH).join('\n');
+      await this.updateJustifiedWords(user, words.length);
+      return this.justifyTextService
+        .fullJustify(words, this.TEXT_LINE_LENGTH)
+        .join('\n');
     }
 
     // if user has exceded the daily allowed limit

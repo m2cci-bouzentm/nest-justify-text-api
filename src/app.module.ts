@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { AppService } from './app.service';
 import { ApiController } from './api/api.controller';
 import { ApiService } from './api/api.service';
 import { JustifyTextService } from './justify-text/justify-text.service';
@@ -30,7 +29,6 @@ import { ScheduleModule } from '@nestjs/schedule';
   ],
   controllers: [AppController, ApiController],
   providers: [
-    AppService,
     ApiService,
     JustifyTextService,
     PrismaService,

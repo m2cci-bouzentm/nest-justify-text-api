@@ -19,6 +19,9 @@ describe('ApiController', () => {
   let justifyTextService: JustifyTextService;
   let mockToken: string;
 
+  const jsonContentType: string = 'application/json';
+  const textContentType: string = 'text/plain';
+
   let rawText: string;
   let rawTextSplited: string[];
   let justifiedText: string[];
@@ -43,14 +46,16 @@ describe('ApiController', () => {
         .spyOn(apiService, 'registreUser')
         .mockImplementation(async () => Promise.resolve(result));
       // hitting th end point without an email in the body
-      expect(await apiController.registreUser('')).toBe(result);
+      expect(await apiController.registreUser('', jsonContentType)).toBe(
+        result,
+      );
     });
 
     it("should return an already registred user's token", async () => {
       // The user must exist in the database before testing
       const email = 'mohamed@gmail.com';
       const mockMinLengthToken = 150;
-      const token = await apiController.registreUser(email);
+      const token = await apiController.registreUser(email, jsonContentType);
       expect(token.length).toBeGreaterThan(mockMinLengthToken);
     });
 
@@ -58,7 +63,7 @@ describe('ApiController', () => {
       // generate random fake email
       const email = Math.floor(Math.random() * 987654) + '@gmail.com';
       const mockMinLengthToken = 150;
-      const token = await apiController.registreUser(email);
+      const token = await apiController.registreUser(email, jsonContentType);
       expect(token.length).toBeGreaterThan(mockMinLengthToken);
     });
   });
@@ -149,32 +154,60 @@ describe('ApiController', () => {
       ];
     });
 
-    it('should return an "UnauthorizedException" when a token isn\'t included in the request', () => {
+    it.only('should throw invalid body type exception', async () => {
+      // The user must exist in the database before running this test
+      const result = new HttpException(
+        `Invalid body type. Expected ${textContentType}`,
+        HttpStatus.BAD_REQUEST,
+      );
+      const headers = {
+        authorization: mockToken,
+        contentType: jsonContentType,
+      };
+      const body = { text: rawText };
+      const test = await apiController.justifyText(
+        body.text,
+        headers.authorization,
+        headers.contentType,
+      );
+      expect(test.split('\n')).rejects.toThrow(result);
+    });
+
+    it('should throw an "UnauthorizedException" when a token isn\'t included in the request', () => {
       // The user must exist in the database before testing
       const result = new UnauthorizedException(
         'You need to register using an email at /api/token before justifying any text or include your token in the authorization header if already registered.',
       );
-      const headers = { authorization: '' };
+      const headers = { authorization: '', contentType: textContentType };
       const body = { text: rawText };
 
       expect(
-        apiController.justifyText(body.text, headers.authorization),
+        apiController.justifyText(
+          body.text,
+          headers.authorization,
+          headers.contentType,
+        ),
       ).rejects.toThrow(result);
     });
 
     it('should return a justified text', async () => {
       // The user must exist in the database before running this test
-      const headers = { authorization: mockToken };
+      const headers = {
+        authorization: mockToken,
+        contentType: textContentType,
+      };
       const body1 = { text: rawText };
       const body2 = { text: rawTextSplited.join(' ') };
 
       const test1 = await apiController.justifyText(
         body1.text,
         headers.authorization,
+        headers.contentType,
       );
       const test2 = await apiController.justifyText(
         body2.text,
         headers.authorization,
+        headers.contentType,
       );
 
       expect(test1.split('\n')).toStrictEqual(justifiedText);
@@ -185,9 +218,12 @@ describe('ApiController', () => {
       // Pre-test setup
       // The user must exist in the database before running this test
       // Adjust MAX_DAILY_WORDS limits in the environment variables if needed
-      // Run as the only test if need. Use it.only instead of it 
+      // Run as the only test if need. Use it.only instead of it
 
-      const headers = { authorization: mockToken };
+      const headers = {
+        authorization: mockToken,
+        contentType: textContentType,
+      };
       const body = { text: rawText };
 
       const expectedException = new HttpException(
@@ -195,7 +231,11 @@ describe('ApiController', () => {
         HttpStatus.PAYMENT_REQUIRED,
       );
 
-      const test = apiController.justifyText(body.text, headers.authorization);
+      const test = apiController.justifyText(
+        body.text,
+        headers.authorization,
+        headers.contentType,
+      );
 
       expect(test).rejects.toThrow(expectedException);
     });
