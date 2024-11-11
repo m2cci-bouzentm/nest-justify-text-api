@@ -8,6 +8,8 @@ import { JustifyTextService } from './justify-text/justify-text.service';
 import { PrismaService } from './prisma/prisma.service';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
+import { JobsService } from './jobs/jobs.service';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -24,6 +26,7 @@ import { ConfigModule } from '@nestjs/config';
       secret: process.env.SECRET,
       signOptions: { expiresIn: '30 days' },
     }),
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController, ApiController],
   providers: [
@@ -31,6 +34,7 @@ import { ConfigModule } from '@nestjs/config';
     ApiService,
     JustifyTextService,
     PrismaService,
+    JobsService,
   ],
 })
 export class AppModule {}

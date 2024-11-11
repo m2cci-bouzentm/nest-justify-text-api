@@ -7,31 +7,35 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
-import { JustifyTextService } from 'src/justify-text/justify-text.service';
-import { PrismaService } from 'src/prisma/prisma.service';
-
+import { JustifyTextService } from '../justify-text/justify-text.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ApiService {
   private readonly MAX_DAILY_WORDS: number = Number(
     process.env.MAX_DAILY_WORDS,
   );
+  private readonly TEXT_LINE_LENGTH: number = Number(
+    process.env.TEXT_LINE_LENGTH,
+  );
 
   constructor(
     private justifyTextService: JustifyTextService,
     private prisma: PrismaService,
-    private readonly jwtService: JwtService,
+    private jwtService: JwtService,
   ) {}
 
   async justifyText(text: string, token: string): Promise<string> {
     const words: string[] = text.split(' ');
+
+    // get the user's email if he included the token in the request
     const userEmail: string = await this.getUserEmailFromToken(token);
 
     const user: User = await this.getUserByEmail(userEmail);
 
     if (user.justifiedWords + words.length < this.MAX_DAILY_WORDS) {
-      await this.updateJustifiedWords(user, words.length);
-      return this.justifyTextService.fullJustify(words, 80).join(' ');
+      await this.updateJustifiedWords(user, words.length);       
+      return this.justifyTextService.fullJustify(words, this.TEXT_LINE_LENGTH).join('\n');
     }
 
     // if user has exceded the daily allowed limit
@@ -48,7 +52,6 @@ export class ApiService {
       throw new BadRequestException('Email is required');
     }
 
-    // get the user if already registred
     if (await this.isRegistred(email)) {
       user = await this.getUserByEmail(email);
       return user.token;

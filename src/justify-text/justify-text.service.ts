@@ -2,6 +2,35 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class JustifyTextService {
+  
+  fullJustify(words: string[], maxWidth: number): string[] {
+    let rowLen = 0;
+    let pointer = 0;
+    let grouped: string[][] = [];
+    let result: string[] = [];
+
+    for (let i = 0; i < words.length; i++) {
+      if (
+        grouped[pointer] &&
+        rowLen + words[i].length + grouped[pointer].length > maxWidth
+      ) {
+        result[pointer] = this.justify(grouped[pointer], maxWidth - rowLen);
+        pointer += 1;
+        rowLen = 0;
+      }
+
+      rowLen += words[i].length;
+
+      grouped?.[pointer]
+        ? grouped[pointer].push(words[i])
+        : grouped.push([words[i]]);
+    }
+
+    result[pointer] = this.justifyLeft(grouped[pointer], maxWidth - rowLen);
+
+    return result;
+  }
+
   private getEmptyString(num: number) {
     let str = '';
 
@@ -37,32 +66,4 @@ export class JustifyTextService {
       ? this.justifyLeft(row, spaces)
       : this.justifyCenter(row, spaces);
   };
-
-  fullJustify(words: string[], maxWidth: number): string[] {
-    let rowLen = 0;
-    let pointer = 0;
-    let grouped: string[][] = [];
-    let result: string[] = [];
-
-    for (let i = 0; i < words.length; i++) {
-      if (
-        grouped[pointer] &&
-        rowLen + words[i].length + grouped[pointer].length > maxWidth
-      ) {
-        result[pointer] = this.justify(grouped[pointer], maxWidth - rowLen);
-        pointer += 1;
-        rowLen = 0;
-      }
-
-      rowLen += words[i].length;
-
-      grouped?.[pointer]
-        ? grouped[pointer].push(words[i])
-        : grouped.push([words[i]]);
-    }
-
-    result[pointer] = this.justifyLeft(grouped[pointer], maxWidth - rowLen);
-
-    return result;
-  }
 }
