@@ -22,7 +22,7 @@ This is a RESTful API built with **NestJS** that justifies text to a specific li
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/nest-justify-text-api.git
+git clone https://github.com/m2cci-bouzentm/nest-justify-text-api.git
 cd nest-justify-text-api
 ```
 
